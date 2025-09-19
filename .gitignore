@@ -1,0 +1,22 @@
+# Environment variables
+.env
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Python cache & artifacts
+__pycache__/
+*.pyc
+
+# IDE configuration
+.vscode/
+.idea/
+*.DS_Store
+
+# Project-specific ignores
+chroma_db/
+evaluation_results.csv
+data/*.pdf
+data/*.PDF
