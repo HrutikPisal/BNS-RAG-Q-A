@@ -1,0 +1,12 @@
+streamlit
+langchain
+langchain_chroma
+langchain_community
+langchain_core
+dotenv
+langchain_ollama
+langchain_huggingface
+sentence-transformers
+PyMuPDF
+pandas
+tqdm
