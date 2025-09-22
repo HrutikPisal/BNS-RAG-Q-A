@@ -1,4 +1,5 @@
 import os
+import shutil
 from dotenv import load_dotenv
 
 from langchain_chroma import Chroma
@@ -8,8 +9,9 @@ from langchain_community.document_loaders import PyMuPDFLoader
 
 # --- Constants ---
 DATA_DIR = "./data/"
-PERSIST_DIR = "./chroma_db"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+#PERSIST_DIR = "./chroma_db"
+PERSIST_DIR = "./bge_db"
+EMBEDDING_MODEL = "BAAI/bge-large-en-v1.5"
 
 def main():
     """
@@ -38,7 +40,14 @@ def main():
         return
 
     print("\nSplitting documents into chunks...")
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    # For legal documents, a generic chunk size can be suboptimal. A larger chunk size
+    # helps keep entire sections (e.g., a crime's definition and its punishment) together
+    # in a single chunk, providing more complete context to the LLM.
+    # A larger overlap ensures better context continuity if a section must be split.
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1500, 
+        chunk_overlap=200
+    )
     splits = text_splitter.split_documents(all_docs)
 
     print("Creating embeddings and building vector store... (This may take a while)")
