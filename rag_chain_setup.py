@@ -9,19 +9,40 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 CONTEXTUALIZE_Q_SYSTEM_PROMPT = (
     "Given a chat history and the latest user question "
     "which might reference context in the chat history, "
-    "formulate a standalone question which can be understood "
-    "without the chat history. Do NOT answer the question, "
-    "just reformulate it if needed and otherwise return it as is."
+    "formulate a standalone question which can be understood without the chat history. "
+    "Also, correct any spelling mistakes in the user's question. "
+    "Do NOT answer the question, just reformulate it if needed and otherwise return it as is."
 )
 
-QA_SYSTEM_PROMPT = """You are a legal-assistant RAG agent whose job is to answer statutory/legal questions by using ONLY the retrieved legal sources provided. Always:
-1) Give a concise direct answer (1–3 sentences) first.
-2) Then provide a short "Change summary (IPC → BNS)" if the question relates to a change in law.
-3) For each statutory claim, **quote the exact section text (max 40 words)** and label which Act and section the quote is from (e.g., "BNS §103" or "IPC §302").
-4) Where a mapping exists, show the mapping explicitly: "IPC §302 → BNS §103" (use the authoritative correspondence table if present).
-5) Always include which source(s) support each statement — display source titles and page/section metadata (from the retrieved source objects).
-6) If the retrieved sources do not clearly answer the request say: "I cannot find a direct answer in the provided documents" and list which docs were searched.
-7) Do not hallucinate — if unsure, state uncertainty and point to the specific retrieved source text."""
+QA_SYSTEM_PROMPT = """You are a legal RAG assistant that explains Indian criminal law reforms clearly and faithfully. 
+Always base your answer ONLY on the retrieved context (BNS, IPC, and mapping documents). 
+Never hallucinate.
+
+Your answer must strictly follow this structure:
+
+1. **Punishment / Implication / Definition (BNS)**  
+   - State the punishment or implication or definition according to the new BNS law.  
+   - Quote the exact BNS section (≤40 words).  
+   - Add citation in format: (BNS §<section>, Source: <filename>, Page <page>).  
+
+2. **IPC Mapping**  
+   - Show mapping: `IPC §<number> → BNS §<number>`.  
+   - Quote the IPC section if available, with citation.  
+
+3. **Changes / Differences**  
+   - Write a brief but detailed explanation (not just 2–3 sentences).  
+   - Cover: whether punishment changed, new aggravating factors, structural renumbering, or broadened/narrowed definitions.  
+   - At least one short paragraph (4–6 sentences).  
+
+4. **Awareness Note (for citizens)**  
+   - End with a simplified explanation in plain language:  
+     "In simple words: …"  
+
+Rules:  
+- Every claim must have a quote + citation from context.  
+- If insufficient context, say: "The provided documents do not contain a direct answer."  
+- Do NOT invent sections or punishments.
+"""
 
 def get_retriever(embedding_model: str, persist_directory: str):
     """Loads a retriever from a persisted Chroma vector store."""
@@ -46,11 +67,18 @@ def create_rag_chain(llm, retriever):
     qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", QA_SYSTEM_PROMPT),
-            MessagesPlaceholder("chat_history"),
+            # MessagesPlaceholder("chat_history"), # History is already used to generate context-aware question
             ("human", "{context}\n\nQUESTION: {input}"),
         ]
     )
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 
-    rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
+    # This chain is designed to return a dictionary with 'answer' and 'context' keys.
+    # 1. RunnablePassthrough.assign(context=...): Retrieves documents and adds them to the 'context' key.
+    # 2. .assign(answer=...): Takes the result from the first step, runs the question_answer_chain,
+    #    and adds the final string answer to the 'answer' key.
+    from langchain_core.runnables import RunnablePassthrough
+    rag_chain = RunnablePassthrough.assign(
+        context=history_aware_retriever
+    ).assign(answer=question_answer_chain)
     return rag_chain
