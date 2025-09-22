@@ -12,14 +12,14 @@ The application provides a conversational interface to a knowledge base built fr
 -   **IPC vs. BNS Comparison:** Get answers that highlight the changes from the IPC to the BNS.
 -   **Sourced Answers:** Responses include direct quotes from the legal texts and cite the relevant sections.
 -   **Persistent Knowledge Base:** Uses a Chroma vector database to store document embeddings, avoiding the need to re-process files on every run.
--   **Local LLM Support:** Powered by local LLMs served via Ollama (e.g., Gemma, Llama, Mistral).
+-   **Local LLM Support:** Powered by Ollama, allowing you to run models like Mistral or Llama 3 locally.
 -   **Built-in Evaluation:** Includes a script to evaluate the RAG pipeline's performance on a set of benchmark questions.
 
 ## Tech Stack
 
 -   **Frameworks:** LangChain, Streamlit
 -   **Vector DB:** ChromaDB
--   **Embeddings:** SentenceTransformers (`all-MiniLM-L6-v2`)
+-   **Embedding Model:** HuggingFace (`BAAI/bge-large-en-v1.5`)
 -   **LLM Backend:** Ollama
 -   **Document Loading:** PyMuPDF
 
@@ -55,7 +55,9 @@ pip install -r requirements.txt
 
 ### 3. Set Up Environment Variables
 
-Create a `.env` file in the root directory and add your Hugging Face token. This is used for downloading the embedding model.
+Create a `.env` file in the root directory and add your Hugging Face token. This token requires 'read' permissions for downloading the embedding model and 'write' permissions to use the Inference API for the LLM.
+
+**Note:** You must also visit the Hugging Face repository for your chosen model (e.g., `mistralai/Mistral-7B-Instruct-v0.2` or `meta-llama/Meta-Llama-3.1-8B-Instruct`) and accept its license agreement to use it via the API.
 
 ```
 HF_TOKEN="your-hugging-face-token"
@@ -67,7 +69,7 @@ Place the PDF files for the Bharatiya Nyaya Sanhita (BNS), Indian Penal Code (IP
 
 ### 5. Build the Vector Store
 
-Run the following script once to process the PDFs and create the persistent vector database in the `./chroma_db/` directory.
+Run the following script once to process the PDFs and create the persistent vector database in the `./bge_db/` directory.
 
 ```bash
 python build_vectorstore.py
@@ -85,7 +87,7 @@ This will open the application in your web browser.
 
 ### 7. (Optional) Run the Evaluation
 
-To test the performance of the RAG pipeline, you can run the evaluation script. This will ask you to manually score the answers for a predefined set of questions in `test_plan.csv`.
+To test the performance of the RAG pipeline, you can run the evaluation script. This uses the RAGAs framework to automatically score the answers for a predefined set of questions in `test_plan.csv`.
 
 ```bash
 python evaluation.py
