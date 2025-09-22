@@ -2,22 +2,31 @@ import streamlit as st
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_ollama import ChatOllama
-from langchain_core.runnables.history import RunnableWithMessageHistory
 import os 
-from dotenv import load_dotenv
 
 from rag_chain_setup import get_retriever, create_rag_chain
 
-load_dotenv()
-os.environ['HF_TOKEN']=os.getenv('HF_TOKEN')
-
 # --- Constants ---
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-PERSIST_DIR = "./chroma_db"
+PERSIST_DIR = "./bge_db"
+EMBEDDING_MODEL = "BAAI/bge-large-en-v1.5"
 
-st.title("🧑‍⚖️ RAG Q&A for Indian Law (BNS ↔ IPC)")
 
-llm=ChatOllama(model="gemma:2b", temperature=0.1)
+st.title("⚖️ RAG Q&A for Indian Law (BNS ↔ IPC)")
+
+# --- LLM Configuration ---
+# Using a local model via Ollama
+OLLAMA_MODEL = "mistral" # Make sure you have pulled this model with `ollama run mistral`
+try:
+    llm = ChatOllama(
+        model=OLLAMA_MODEL,
+        temperature=0.1,
+    )
+   
+except Exception as e:
+    st.error(f"Failed to connect to Ollama: {e}")
+    st.info(f"Please ensure Ollama is running and you have pulled the '{OLLAMA_MODEL}' model (e.g., `ollama run {OLLAMA_MODEL}`).")
+    st.stop()
+
 
 # We will use a single, fixed session ID for each user's browser session.
 # This removes the need for the user to manually enter a session ID.
@@ -44,24 +53,33 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
         st.session_state.store[session_id] = ChatMessageHistory()
     return st.session_state.store[session_id]
 
-conversational_rag_chain = RunnableWithMessageHistory(
-    rag_chain,
-    get_session_history,
-    input_messages_key="input",
-    history_messages_key="chat_history",
-    output_messages_key="answer",
-)
-
 # Display chat messages from history on app rerun
-if session_id in st.session_state.store:
-    for message in st.session_state.store[session_id].messages:
-        with st.chat_message(message.type):
-            st.markdown(message.content)
+history = get_session_history(session_id)
+for message in history.messages:
+    with st.chat_message(message.type):
+        st.markdown(message.content)
 
 if prompt := st.chat_input("Ask a question about the PDF"):
     st.chat_message("user").markdown(prompt)
+
     with st.chat_message("assistant"):
-        response = conversational_rag_chain.invoke(
-            {"input": prompt}, config={"configurable": {"session_id": session_id}}
-        )
-        st.markdown(response["answer"])
+        with st.spinner("Thinking..."):
+            # Invoke the chain directly, providing the current question and the chat history
+            response = rag_chain.invoke(
+                {"input": prompt, "chat_history": history.messages}
+            )
+            
+            # Manually update the chat history with the new user query and AI response
+            history.add_user_message(prompt)
+            history.add_ai_message(response["answer"])
+    
+            st.markdown(response["answer"])  # Display the main answer
+    
+            # Display the source documents in an expander
+            with st.expander("View Sources"):
+                for doc in response["context"]:
+                    # Safely access metadata
+                    source = doc.metadata.get('source', 'Unknown source')
+                    page = doc.metadata.get('page', 'N/A')
+                    st.info(f"Source: {os.path.basename(source)} (Page: {page})")
+                    st.markdown(f"> {doc.page_content}")
