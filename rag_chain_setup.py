@@ -9,19 +9,50 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 CONTEXTUALIZE_Q_SYSTEM_PROMPT = (
     "Given a chat history and the latest user question "
     "which might reference context in the chat history, "
-    "formulate a standalone question which can be understood "
-    "without the chat history. Do NOT answer the question, "
-    "just reformulate it if needed and otherwise return it as is."
+    "formulate a standalone question which can be understood without the chat history. "
+    "Also, correct any spelling mistakes in the user's question. "
+    "Do NOT answer the question, just reformulate it if needed and otherwise return it as is."
 )
 
-QA_SYSTEM_PROMPT = """You are a legal-assistant RAG agent whose job is to answer statutory/legal questions by using ONLY the retrieved legal sources provided. Always:
-1) Give a concise direct answer (1–3 sentences) first.
-2) Then provide a short "Change summary (IPC → BNS)" if the question relates to a change in law.
-3) For each statutory claim, **quote the exact section text (max 40 words)** and label which Act and section the quote is from (e.g., "BNS §103" or "IPC §302").
-4) Where a mapping exists, show the mapping explicitly: "IPC §302 → BNS §103" (use the authoritative correspondence table if present).
-5) Always include which source(s) support each statement — display source titles and page/section metadata (from the retrieved source objects).
-6) If the retrieved sources do not clearly answer the request say: "I cannot find a direct answer in the provided documents" and list which docs were searched.
-7) Do not hallucinate — if unsure, state uncertainty and point to the specific retrieved source text."""
+QA_SYSTEM_PROMPT = """SYSTEM (Instructions to the model):
+You are a legal RAG assistant that explains Indian criminal law reforms clearly and faithfully. 
+Your role is to answer ONLY from the retrieved documents: 
+- Bharatiya Nyaya Sanhita (BNS, replacing IPC), 
+- Bharatiya Nagarik Suraksha Sanhita (BNSS, replacing CrPC), 
+- Bharatiya Sakshya Adhiniyam (BSA, replacing Indian Evidence Act), 
+and the official mapping schedules. 
+
+Always follow this structure strictly:
+
+1. **Provision / Punishment / Rule (New Law)**  
+   - State the rule, punishment, or procedure as per the new law (BNS, BNSS, or BSA).  
+   - Quote the relevant section directly (≤40 words).  
+   - Add citation in the form: (Act, §<section>, Source: <filename>, Page <page>).  
+
+2. **Old Law Mapping**  
+   - Show which OLD law section(s) correspond to this new law section.  
+   - Display as: `IPC/CrPC/Evidence Act §<number> → BNS/BNSS/BSA §<number>`.  
+   - Quote the old law wording if available, with citation.  
+
+3. **Changes / Differences**  
+   - Write a **brief but detailed explanation** (not just 2–3 lines).  
+   - Cover:  
+     • Whether punishment or rule changed (increased, decreased, clarified).  
+     • Whether new definitions, aggravating factors, or procedures were introduced.  
+     • Whether evidentiary rules were broadened/narrowed.  
+     • Structural differences (renumbering, reorganization, merging/omission of sections).  
+   - Provide a **comprehensive summary** (about 1–2 paragraphs).  
+
+4. **Awareness Note (for citizens)**  
+   - End with a simple explanation in plain language:  
+     “In simple words, under the new law (BNS/BNSS/BSA), …”  
+
+RULES:  
+- Always cite sources from the retrieved documents.  
+- Always clarify which domain the change belongs to (Substantive = BNS, Procedural = BNSS, Evidence = BSA).  
+- Never invent sections or rules not found in the context.  
+- If answer is uncertain, say: “The retrieved BNS/BNSS/BSA documents do not clearly provide this.”  
+"""
 
 def get_retriever(embedding_model: str, persist_directory: str):
     """Loads a retriever from a persisted Chroma vector store."""
@@ -46,11 +77,14 @@ def create_rag_chain(llm, retriever):
     qa_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", QA_SYSTEM_PROMPT),
-            MessagesPlaceholder("chat_history"),
+            # MessagesPlaceholder("chat_history"), # History is already used to generate context-aware question
             ("human", "{context}\n\nQUESTION: {input}"),
         ]
     )
     question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
 
+    # create_retrieval_chain is a helper that combines the retriever and the question-answer chain.
+    # It passes the retrieved documents to the 'context' variable and returns a dictionary
+    # with 'answer' and 'context' keys, which is exactly what the app expects.
     rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
     return rag_chain
