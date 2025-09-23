@@ -8,8 +8,8 @@ from langchain_community.document_loaders import PyMuPDFLoader
 
 # --- Constants ---
 DATA_DIR = "./data/"
-PERSIST_DIR = "./chroma_db"
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+PERSIST_DIR = "./bge_db"
+EMBEDDING_MODEL = "BAAI/bge-large-en-v1.5"
 
 def main():
     """
@@ -54,4 +54,5 @@ def main():
     print(f"Data persisted to '{PERSIST_DIR}'.")
 
 if __name__ == "__main__":
+
     main()
