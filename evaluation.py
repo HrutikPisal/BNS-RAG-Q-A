@@ -11,7 +11,7 @@ from ragas.metrics import (
     context_precision,
 )
 
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_huggingface import HuggingFaceEmbeddings, HuggingFaceEndpoint
 from langchain_huggingface.chat_models import ChatHuggingFace
 
 from rag_chain_setup import get_retriever, create_rag_chain
@@ -24,11 +24,11 @@ PERSIST_DIR = "./bge_db"
 EMBEDDING_MODEL = "BAAI/bge-large-en-v1.5"
 HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"  # Same model as in app.py
 
-def get_rag_chain_and_llm():
+def get_rag_components():
     """
-    Initializes components and returns the full RAG chain and the LLM for evaluation.
+    Initializes components and returns the RAG chain, evaluation LLM, and embeddings.
     """
-    # --- Initialize LLM and Retriever ---
+    # --- Initialize LLM, Retriever, and Embeddings ---
     # LLM for the RAG chain (matches app.py)
     rag_llm = ChatHuggingFace(llm=HuggingFaceEndpoint(
         repo_id=HF_MODEL,
@@ -45,11 +45,14 @@ def get_rag_chain_and_llm():
         max_new_tokens=1024,
     ))
 
+    # Embeddings for RAGAs metrics
+    embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+
     retriever = get_retriever(embedding_model=EMBEDDING_MODEL, persist_directory=PERSIST_DIR)
 
     # --- Create the RAG chain ---
     rag_chain = create_rag_chain(rag_llm, retriever)
-    return rag_chain, eval_llm
+    return rag_chain, eval_llm, embeddings
 
 def main():
     """Main function to run the automated evaluation using RAGAs."""
@@ -73,7 +76,7 @@ def main():
         return
 
     try:
-        rag_chain, eval_llm = get_rag_chain_and_llm()
+        rag_chain, eval_llm, embeddings = get_rag_components()
     except FileNotFoundError as e:
         print(f"Error: {e}")
         return
@@ -113,20 +116,21 @@ def main():
     # Run the evaluation
     # To handle potential connection errors with Ollama during long evaluations,
     # or rate limiting with HF API, we can adjust the concurrency.
-    run_config = RunConfig(thread_pool_size=2) # Lowered to 2 to avoid HF rate limits
+    run_config = RunConfig(max_workers=2) # Lowered to 2 to avoid HF rate limits
     result = evaluate(
         dataset=eval_dataset,
         metrics=metrics,
         llm=eval_llm,
+        embeddings=embeddings,
         run_config=run_config,
     )
 
     results_df = result.to_pandas() # type: ignore
-    results_df.to_csv("evaluation_results_hf.csv", index=False)
+    results_df.to_csv("evaluation_results.csv", index=False)
 
     print("\n\n===== RAGAS EVALUATION SUMMARY =====")
     print(results_df.mean())
-    print("\nFull results saved to evaluation_results_hf.csv")
+    print("\nFull results saved to evaluation_results.csv")
 
 if __name__ == "__main__":
     main()

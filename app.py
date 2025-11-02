@@ -9,7 +9,24 @@ from langchain_huggingface.chat_models import ChatHuggingFace
 from rag_chain_setup import get_retriever, create_rag_chain
 
 # --- Constants ---
-PERSIST_DIR = "./bge_db"
+from huggingface_hub import snapshot_download
+import os
+
+def load_chroma_db():
+    db_dir = "bge_db"
+    if not os.path.exists(db_dir):
+        print("⬇️ Downloading Chroma database from Hugging Face dataset...")
+        snapshot_download(
+            repo_id="Hrutik2003/Bns_Law_Rag_DB",
+            repo_type="dataset",
+            local_dir=db_dir,
+            resume_download=True
+        )
+    print("✅ Chroma database ready at", db_dir)
+    return db_dir
+
+PERSIST_DIR = load_chroma_db
+
 EMBEDDING_MODEL = "BAAI/bge-large-en-v1.5"
 HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"  # Example model
 HF_TOKEN = os.getenv("HF_TOKEN")
