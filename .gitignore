@@ -16,7 +16,12 @@ __pycache__/
 *.DS_Store
 
 # Project-specific ignores
+bge_db/
 chroma_db/
+*.sqlite3
+*.parquet
+*.bin
+
 evaluation_results.csv
 data/*.pdf
 data/*.PDF
