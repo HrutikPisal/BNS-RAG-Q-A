@@ -2,7 +2,7 @@
 title: BNS Law RAG
 emoji: "⚖️"
 colorFrom: "blue"
-colorTo: "teal"
+colorTo: "indigo"   # allowed: red, yellow, green, blue, indigo, purple, pink, gray
 sdk: streamlit
 app_file: app.py
 pinned: false
