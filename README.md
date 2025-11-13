@@ -1,230 +1,190 @@
-🧑‍⚖️ BNS Law RAG Q&A
-Conversational Indian Law Assistant with IPC → BNS Comparison (2025 Reforms)
+🧑‍⚖️ BNS RAG Q&A — Indian Law Awareness Assistant
+Retrieval-Augmented Generation (RAG) System for BNS ↔ IPC Legal Understanding
+<p align="center"> <img src="A_combination_logo_and_flowchart_digital_illustrat.png" width="400"/> </p>
+📘 Overview
 
-This project is a Retrieval-Augmented Generation (RAG) application designed to help citizens, students, and legal professionals understand India’s new criminal law reforms and compare them with the old laws.
+BNS RAG Q&A is an AI-powered legal assistant built using RAG (Retrieval-Augmented Generation) to explain India’s new criminal law reforms (BNS/BNSS/BSA 2023) and compare them with the older IPC/CrPC/IEA laws.
 
-It provides accurate, citation-based answers to legal queries using official PDFs of:
-
-Bharatiya Nyaya Sanhita (BNS), 2023
-
-Bharatiya Nagarik Suraksha Sanhita (BNSS), 2023
-
-Bharatiya Sakshya Adhiniyam (BSA), 2023
-
-IPC / CrPC / IEA (old laws for comparison)
-
-✨ Features
-🔍 1. Interactive Legal Q&A
-
-Ask natural language questions like:
+Just ask questions like:
 
 “What is the punishment for theft under BNS?”
 
-⚖️ 2. IPC → BNS Comparison
+“How does BNS Section 302 differ from IPC 302?”
 
-Automatically highlights changes:
+“Explain the changes in grievous hurt definition.”
 
-Sections
+The system retrieves the exact legal text from your uploaded PDFs and uses an LLM to generate clear, cited answers.
 
-Terminology
+✨ Features
+🔍 Natural Language Q&A
 
-Punishment duration
+Ask questions conversationally; the system retrieves relevant sections and explains them.
 
-Compoundable / cognizable changes
+⚖️ IPC → BNS Comparison
 
-📚 3. Retrieval with Citations
+Automatically highlights:
 
-Every answer references the exact section from the connected PDFs.
+Section number changes
 
-💾 4. Persistent Chroma Vector DB
+New wording
 
-Embeddings are stored in a local Chroma database, so PDFs don’t need re-processing.
+Punishment differences
 
-🤖 5. Hugging Face LLM + Embeddings
+Cognizable / compoundable changes
 
-Embeddings: BAAI/bge-large-en-v1.5 (via Hugging Face API or local fallback)
+📚 True RAG with Citations
 
-LLM: Any HF inference model (Mistral, Llama 3, Gemma, Mixtral)
+All answers include source references from the law PDFs.
 
-🧪 6. Built-in RAG Evaluation
+📦 Persistent Vector Store
 
-Run automated scoring (via RAGAS) using test questions in test_plan.csv.
+Indexes your PDFs into a local Chroma database so embeddings don’t recreate on every run.
 
-🏗️ Tech Stack
-Component	Library / Service
-Framework	Streamlit
-Vector DB	ChromaDB
-Embedding Model	BAAI/bge-large-en-v1.5
+🤖 HuggingFace LLM Support
+
+Works with:
+
+Mistral
+
+LLaMA 3 / 3.1
+
+Gemma
+
+Mixtral
+
+Other HF Inference API models
+
+🧪 RAG Evaluation Included
+
+Evaluate your system using RAGAS with test_plan.csv.
+
+🏗️ Architecture Overview
+<p align="center"> <img src="A_combination_logo_and_flowchart_digital_illustrat.png" width="600"/> </p>
+💻 Tech Stack
+Component	Technology
+UI	Streamlit
+Embeddings	BAAI/bge-large-en-v1.5
 LLM	HuggingFace Inference API
-Document Parsing	PyMuPDF
-RAG Engine	LangChain
-Deployment	Hugging Face Spaces
-
-The project includes a custom HF embedding wrapper, updated to use:
-
-InferenceClient.feature_extraction()
-
-Correct router URLs
-
-Robust fallback logic
-
+Vector Store	ChromaDB
+RAG Framework	LangChain
+PDF Loader	PyMuPDF
 🚀 Getting Started
 1️⃣ Clone the Repository
 git clone https://github.com/HrutikPisal/BNS-RAG-Q-A.git
 cd BNS-RAG-Q-A
 
-2️⃣ Create a Virtual Environment & Install Dependencies
+2️⃣ Create a Virtual Environment & Install Requirements
 python -m venv venv
 
 
-Activate it:
+Activate:
 
 # Windows
 venv\Scripts\activate
 
-# macOS / Linux
+# Linux/macOS
 source venv/bin/activate
 
 
-Install packages:
+Install deps:
 
 pip install -r requirements.txt
 
-3️⃣ Environment Variables
+3️⃣ Set Up Environment Variables
 
 Create a .env file:
 
-HF_TOKEN="your-huggingface-api-token"
+HF_TOKEN="your_huggingface_api_token"
 
 Token Requirements:
 
-read → download embedding model
+read → for model access
 
-write → use Inference API
-Accept the license of the LLM you want to use (Mistral/Llama/etc.).
+write → to call Inference API
 
-4️⃣ Add Legal PDFs
+Accept license for your chosen LLM (Mistral/Llama/Gemma)
 
-Place your official PDFs inside:
+4️⃣ Add Legal Documents
 
-./data/
-    ├── BNS.pdf
-    ├── BNSS.pdf
-    ├── BSA.pdf
-    ├── IPC.pdf
-    ├── CrPC.pdf
-    ├── IEA.pdf
-    └── mappings.pdf   (optional)
+Place your official PDFs inside /data:
+
+data/
+│── BNS.pdf
+│── BNSS.pdf
+│── BSA.pdf
+│── IPC.pdf
+│── CrPC.pdf
+│── IEA.pdf
+└── mapping_docs.pdf   (optional)
 
 5️⃣ Build the Vector Store
 
-Run once to generate embeddings and store them persistently in ./bge_db/:
+Run once to generate embeddings:
 
 python build_vectorstore.py
 
 
-Re-run only when you add/update PDFs.
+Re-run only when you add/change PDFs.
 
-6️⃣ Run the Streamlit App
+6️⃣ Run the App
 streamlit run app.py
 
 
-This opens a full interactive legal chatbot interface in your browser.
+The chatbot will open in your browser.
 
-7️⃣ (Optional) Run Automated Evaluation
+7️⃣ (Optional) Run RAG Evaluation
 python evaluation.py
 
 
 Outputs:
+
 evaluation_results.csv
 
-Uses RAGAS to measure:
-
-Faithfulness
-
-Context precision
-
-Context recall
-
-Ground-truth similarity
-
-🔧 Project Structure
+📂 Project Structure
 .
-├── app.py                   # Streamlit UI for the chatbot
-├── rag_chain_setup.py       # RAG pipeline + HF embedding wrapper (updated)
-├── build_vectorstore.py     # Creates Chroma DB from PDFs
-├── evaluation.py            # RAG evaluation via RAGAS
-├── data/                    # Source legal PDFs
-├── bge_db/                  # Persistent Chroma vector DB
-├── test_plan.csv            # Benchmark Q&A dataset
+├── app.py                   # Streamlit app
+├── rag_chain_setup.py       # RAG chain + HF embedding wrapper (updated)
+├── build_vectorstore.py     # PDF → Chroma DB pipeline
+├── evaluation.py            # RAG evaluation using RAGAS
+├── data/                    # Legal PDFs
+├── bge_db/                  # Persistent Chroma DB
+├── test_plan.csv            # Benchmark questions
 ├── requirements.txt
 ├── .env
 └── README.md
 
-🧩 Updated HuggingFace Embedding System
+🔧 HuggingFace Embedding Fix Included
 
-The project includes a patched HF embedding client to fix common problems like:
+The updated version of rag_chain_setup.py uses:
 
-InferenceClient object has no attribute 'embeddings'
-
-Router 404 / 410 errors
-
-Legacy API shutdowns
-
-The updated wrapper uses:
-
-client.feature_extraction(...)
-
-
-and correct router URL:
+✔ InferenceClient.feature_extraction()
+✔ Correct router URL:
 
 https://router.huggingface.co/hf-inference/models/{model}/pipeline/feature-extraction
 
-📌 Recommended Models
-Embeddings
 
-BAAI/bge-large-en-v1.5
+✔ Fallback to:
 
-BAAI/bge-base-en-v1.5
+Router API
 
-LLMs for RAG
+Legacy API
 
-mistralai/Mistral-7B-Instruct-v0.2
+Local BGE embeddings
 
-meta-llama/Meta-Llama-3.1-8B-Instruct
+✔ Robust error handling for 404/410/timeout
 
-google/gemma-2-9b-it
+📜 Disclaimer
 
-📤 Deploy on Hugging Face Spaces
+This tool is for legal awareness and education only.
+It is NOT a substitute for professional legal advice.
+Consult a qualified lawyer for real-world cases.
 
-Compatible with:
+❤️ Contributions Welcome
 
-CPU (slow but works)
+Improve mapping datasets
 
-T4 GPU
+Correct legal interpretations
 
-A10G (recommended)
+Improve RAG performance
 
-Add these variables to HF Space settings:
-
-HF_TOKEN
-
-❤️ Contribution
-
-Pull requests & improvements are welcome!
-Feel free to open issues for:
-
-Indian law mistakes
-
-Citation errors
-
-Performance bugs
-
-Better mapping datasets
-
-🛡️ Disclaimer
-
-This tool is for public awareness and education only.
-It is not a substitute for legal advice.
-Always consult a qualified legal professional for real cases.
-
+Add more acts (POSH, IT Act, Motor Vehicles Act, etc.)
