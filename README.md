@@ -133,16 +133,8 @@ Outputs: `evaluation_results.csv`
 └── README.md
 ```
 GPT-powered-commit-summaries
-## 🔧 HuggingFace Embedding Fix Included
-
-The updated version of `rag_chain_setup.py` uses:
-*   ✔ `InferenceClient.feature_extraction()`
-*   ✔ Correct router URL: `https://router.huggingface.co/hf-inference/models/{model}/pipeline/feature-extraction`
-*   ✔ Fallback to:
-    *   Router API
-    *   Legacy API
-    *   Local BGE embeddings
-*   ✔ Robust error handling for 404/410/timeout
+## 🔧 HuggingFace Version Included
+You can find the deployed version on Hugging Face : ```https://huggingface.co/spaces/Hrutik2003/Bns_Law_Rag```
 
 ## 📜 Disclaimer
 
