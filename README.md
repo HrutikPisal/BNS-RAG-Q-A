@@ -2,7 +2,6 @@
 
 Retrieval-Augmented Generation (RAG) System for BNS ↔ IPC Legal Understanding
 
-<p align="center"> <img src="A_combination_logo_and_flowchart_digital_illustrat.png" width="400"/> </p>
 
 ## 📘 Overview
 
